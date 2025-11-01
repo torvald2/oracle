@@ -1,0 +1,52 @@
+
+version: '3.8'
+
+services:
+  # Сервис нашего Go-приложения
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      # Строка подключения к БД. 'db' - это имя сервиса postgres в этой сети docker-compose
+      DB_CONNECTION_STRING: "postgres://kipinfo_user:kipinfo_password@db:5432/kipinfo_db?sslmode=disable"
+    depends_on:
+      db:
+        condition: service_healthy # Ожидаем, пока база данных будет готова принимать подключения
+    networks:
+      - wells-network
+
+  # Сервис базы данных PostgreSQL
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: kipinfo_user
+      POSTGRES_PASSWORD: kipinfo_password
+      POSTGRES_DB: kipinfo_db
+    volumes:
+      # Монтируем скрипт инициализации для создания таблицы и моковых данных
+      - ./db/init:/docker-entrypoint-initdb.d
+      # Сохраняем данные postgres между перезапусками контейнера
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # Пробрасываем порт наружу, чтобы можно было подключиться к БД с хост-машины для отладки
+      # Используем 5433 на хосте, чтобы не конфликтовать с локально запущенным Postgres
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kipinfo_user -d kipinfo_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wells-network
+
+# Определяем именованный том для хранения данных БД
+volumes:
+  postgres_data:
+
+# Определяем сеть для взаимодействия сервисов
+networks:
+  wells-network:
+    driver: bridge
