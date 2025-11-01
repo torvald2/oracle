@@ -8,7 +8,8 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "443:8080"
+      # Порт 8080 остается доступным напрямую
+      - "8080:8080"
     environment:
       # Строка подключения к БД. 'db' - это имя сервиса postgres в этой сети docker-compose
       DB_CONNECTION_STRING: "postgres://kipinfo_user:kipinfo_password@db:5432/kipinfo_db?sslmode=disable"
@@ -17,6 +18,7 @@ services:
         condition: service_healthy # Ожидаем, пока база данных будет готова принимать подключения
     networks:
       - wells-network
+    restart: unless-stopped
 
   # Сервис базы данных PostgreSQL
   db:
@@ -41,10 +43,27 @@ services:
       retries: 5
     networks:
       - wells-network
+    restart: unless-stopped
 
-# Определяем именованный том для хранения данных БД
+  # Сервис Caddy для SSL и реверс-прокси
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - wells-network
+
+# Определяем именованные тома для хранения данных
 volumes:
   postgres_data:
+  caddy_data:
+  caddy_config:
 
 # Определяем сеть для взаимодействия сервисов
 networks:
