@@ -6,6 +6,34 @@ import (
 	"github.com/google/uuid"
 )
 
+// OpenSeaAttribute представляет атрибут в метаданных OpenSea.
+type OpenSeaAttribute struct {
+	TraitType   string      `json:"trait_type"`
+	Value       interface{} `json:"value"`
+	DisplayType string      `json:"display_type,omitempty"`
+}
+
+// OpenSeaMetadata представляет полную структуру метаданных для OpenSea.
+type OpenSeaMetadata struct {
+	Description string             `json:"description"`
+	ExternalURL string             `json:"external_url"`
+	Image       string             `json:"image"`
+	Name        string             `json:"name"`
+	Attributes  []OpenSeaAttribute `json:"attributes"`
+}
+
+// Well представляет запись о скважине из таблицы wells.
+type Well struct {
+	ID       uuid.UUID `gorm:"type:uuid;primary_key"`
+	WellID   string    `gorm:"column:well_id;type:text;unique"`
+	WellName string    `gorm:"column:well_name;type:text"`
+}
+
+// TableName указывает GORM, что эта структура сопоставляется с таблицей 'wells'.
+func (Well) TableName() string {
+	return "wells"
+}
+
 // Valuation represents the valuation metrics and economic assumptions for a well.
 type Valuation struct {
 	ID                   uuid.UUID  `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`

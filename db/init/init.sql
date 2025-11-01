@@ -5,7 +5,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- Создаем таблицу valuations
 CREATE TABLE IF NOT EXISTS valuations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    well_id UUID NOT NULL,
+    well_id TEXT NOT NULL,
     npv_usd DECIMAL(15, 2),
     market_value_usd DECIMAL(15, 2),
     discount_pct DECIMAL(5, 2),
@@ -24,10 +24,38 @@ CREATE TABLE IF NOT EXISTS valuations (
 -- Создаем индекс для ускорения поиска по well_id
 CREATE INDEX IF NOT EXISTS idx_valuations_well_id_btree ON valuations(well_id);
 
--- Очищаем таблицу перед вставкой новых данных, чтобы избежать дубликатов при перезапуске
-TRUNCATE TABLE valuations RESTART IDENTITY;
+-- Создаем таблицу wells
+CREATE TABLE IF NOT EXISTS wells (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    well_id TEXT NOT NULL UNIQUE,
+    well_name TEXT NOT NULL,
+    api_number TEXT UNIQUE,
+    state TEXT NOT NULL DEFAULT 'TX',
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
 
--- Вставляем моковые данные
+-- Создаем индекс для ускорения поиска по well_id в wells
+CREATE INDEX IF NOT EXISTS idx_wells_well_id_btree ON wells(well_id);
+
+-- Очищаем таблицы перед вставкой новых данных
+TRUNCATE TABLE valuations, wells RESTART IDENTITY;
+
+-- Вставляем моковые данные в wells
+INSERT INTO wells (well_id, well_name, api_number) VALUES
+(
+    'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    'Starbelly #1H',
+    '42-383-35125'
+),
+(
+    'c2e1f3b4-8d5a-4f2e-9c6b-7d8a9b0c1d2e',
+    'Midnight Oil A-25',
+    '42-123-98765'
+);
+
+-- Вставляем моковые данные в valuations
 INSERT INTO valuations (
     well_id, npv_usd, market_value_usd, confidence, remaining_reserves_bbl, created_at, updated_at
 ) VALUES
